@@ -244,7 +244,55 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 .toast.is-error { border-color: var(--low-fg); color: var(--low-fg); }
 
+/* Sign-in screen */
+.auth {
+  min-height: 100vh; display: grid; place-items: center;
+  padding-block: 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.auth-card {
+  width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px; display: grid; gap: 18px;
+}
+.auth-card .btn { width: 100%; }
+.text-input {
+  width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid var(--border); border-radius: 9px;
+  background: var(--surface); font-size: 17px;
+}
+.text-input:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+.form-error { margin: 0; color: var(--low-fg); font-size: 15px; }
+.hint { color: var(--muted); font-size: 13px; }
+
+/* Signed-in user, password banner and dialog */
+.user { display: inline-flex; align-items: center; gap: 4px 12px; flex-wrap: wrap; }
+.user-name { font-weight: 600; font-size: 16px; display: inline-flex; align-items: center; gap: 8px; }
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+  display: grid; place-items: center; font-weight: 700; font-size: 14px; text-transform: uppercase;
+}
+.role { font-size: 12px; font-weight: 600; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; }
+.banner {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
+  background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius);
+  padding: 12px 16px 12px 20px; font-weight: 500;
+}
+dialog {
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text);
+  padding: 0; width: min(440px, calc(100% - 32px)); box-shadow: 0 16px 48px rgba(0, 0, 0, .2);
+}
+dialog::backdrop { background: rgba(16, 20, 25, .45); }
+dialog form { padding: 24px; display: grid; gap: 16px; }
+dialog h2 { margin: 0; font-size: 20px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Users view */
+.add-user { padding: 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: end; border-bottom: 1px solid var(--border); }
+.add-user .full { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.danger { color: var(--low-fg); }
+
 @media (max-width: 900px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .add-user { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 420px) {
   .tile-value { font-size: 28px; }
   .grid { grid-template-columns: minmax(0, 1fr); }
@@ -254,7 +302,41 @@ tbody tr:last-child td { border-bottom: 0; }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="auth" id="auth" hidden>
+  <form class="auth-card" id="sign-in-form" novalidate>
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6V8Z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3v2M12 3v2"/></svg>
+      </div>
+      <div><h1>Outlet Stock Tracker</h1><p>Sign in to update stock</p></div>
+    </div>
+    <div class="field"><label for="si-username">Username</label>
+      <input class="text-input" id="si-username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+    <div class="field"><label for="si-password">Password</label>
+      <input class="text-input" id="si-password" name="password" type="password" autocomplete="current-password" required></div>
+    <p class="form-error" id="si-error" role="alert" hidden></p>
+    <button class="btn btn-primary" type="submit" id="si-submit">Sign in</button>
+    <p class="footnote">No account? Ask your stock tracker admin to add you.</p>
+  </form>
+</div>
+
+<dialog id="pw-dialog" aria-labelledby="pw-title">
+  <form id="pw-form" novalidate>
+    <h2 id="pw-title">Change password</h2>
+    <div class="field"><label for="pw-new">New password</label>
+      <input class="text-input" id="pw-new" type="password" autocomplete="new-password" minlength="8" required>
+      <span class="hint">At least 8 characters.</span></div>
+    <div class="field"><label for="pw-confirm">Confirm new password</label>
+      <input class="text-input" id="pw-confirm" type="password" autocomplete="new-password" required></div>
+    <p class="form-error" id="pw-error" role="alert" hidden></p>
+    <div class="dialog-actions">
+      <button class="btn" type="button" id="pw-cancel">Cancel</button>
+      <button class="btn btn-primary" type="submit" id="pw-submit">Update password</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="wrap" id="app" hidden>
   <header class="top">
     <div class="brand">
       <div class="mark" aria-hidden="true">
@@ -268,8 +350,18 @@ tbody tr:last-child td { border-bottom: 0; }
     <div class="top-actions">
       <span class="status" id="status" data-state="loading"><span class="dot"></span><span id="status-text">Loading from Supabase…</span></span>
       <button class="btn" id="refresh" type="button">Refresh</button>
+      <div class="user" id="user">
+        <span class="user-name"><span class="avatar" id="user-avatar" aria-hidden="true"></span><span id="user-name"></span><span class="role" id="user-role" hidden>Admin</span></span>
+        <button class="link-btn" id="change-pw" type="button">Change password</button>
+        <button class="btn" id="sign-out" type="button">Sign out</button>
+      </div>
     </div>
   </header>
+
+  <div class="banner" id="pw-banner" hidden>
+    <span>You’re still using your starting password. Change it so only you can sign in as yourself.</span>
+    <button class="btn btn-primary" id="pw-banner-btn" type="button">Change password</button>
+  </div>
 
   <section class="tiles" id="tiles" aria-label="Summary"></section>
 
@@ -290,12 +382,18 @@ tbody tr:last-child td { border-bottom: 0; }
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 const SUPABASE_URL = 'https://szukysnapqpbyiyaunna.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_bOJ6RCUmWlTwgSQXYGAKRA_I4cOXPtV';
+// Usernames sign in through Supabase Auth as <username>@example.com (the project's existing convention).
+const EMAIL_DOMAIN = 'example.com';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
 
 const CATEGORY_ORDER = ['Coffee', 'Dairy', 'Powders & syrups', 'Packaging', 'Bakery', 'Other'];
 const ORDER_TAB = 'order';
+const USERS_TAB = 'users';
 
 const state = {
   outlets: [],            // [{ outlet_id, name }]
@@ -306,6 +404,9 @@ const state = {
   category: 'All',
   lowOnly: false,
   saving: new Set(),
+  me: null,               // { id, username, display_name, is_admin }
+  members: [],            // admin only: [{ user_id, is_admin, created_at, profile: { username, display_name } }]
+  confirmRemove: null,    // user_id awaiting a second click on "Remove access"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -319,6 +420,8 @@ const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in loc
 
 async function api(path, { method = 'GET', body, prefer } = {}) {
   const headers = { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' };
+  const token = (await sb.auth.getSession()).data.session?.access_token;
+  if (token) headers.Authorization = `Bearer ${token}`;
   if (prefer) headers.Prefer = prefer;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
   const text = await res.text();
@@ -347,16 +450,17 @@ async function load() {
     }]));
     // Keep unsaved edits that still point at real rows.
     for (const k of [...state.drafts.keys()]) if (!state.rows.has(k)) state.drafts.delete(k);
-    if (!state.tab || (state.tab !== ORDER_TAB && !outlets.some((o) => o.outlet_id === state.tab))) {
+    if (!validTab(state.tab)) {
       const fromHash = location.hash.slice(1);
-      state.tab = fromHash === ORDER_TAB || outlets.some((o) => o.outlet_id === fromHash) ? fromHash : outlets[0]?.outlet_id ?? null;
+      state.tab = validTab(fromHash) ? fromHash : outlets[0]?.outlet_id ?? null;
     }
     if (!outlets.length || !state.rows.size) {
       setStatus('error', 'No data visible');
-      renderMessage('No inventory is visible to this page',
-        'The Supabase tables exist, but their access rules don’t let the publishable key read them yet. Add the read and save rules in Supabase, then press Refresh.');
+      renderMessage('No inventory is visible to your account',
+        'You’re signed in, but Supabase returned no stock data for you. Ask your stock tracker admin to check your access, then press Refresh.');
       return;
     }
+    if (state.me?.is_admin) await loadMembers();
     setStatus('live', `Synced ${new Date().toLocaleTimeString('en-SG', { hour: 'numeric', minute: '2-digit' })}`);
     renderAll();
   } catch (err) {
@@ -409,8 +513,11 @@ function orderLines() {
 
 /* ---------- Rendering ---------- */
 
+function validTab(id) {
+  return id === ORDER_TAB || (id === USERS_TAB && !!state.me?.is_admin) || state.outlets.some((o) => o.outlet_id === id);
+}
+
 function renderAll() {
-  $('filters').hidden = false;
   renderTiles();
   renderTabs();
   renderChips();
@@ -450,9 +557,10 @@ function renderTabs() {
     return { id: o.outlet_id, label: o.name, count: low || '', cls: '' };
   });
   tabs.push({ id: ORDER_TAB, label: 'Order from suppliers', count: lines.length || '', cls: 'is-order' });
+  if (state.me?.is_admin) tabs.push({ id: USERS_TAB, label: 'Users', count: '', cls: '' });
   $('tabs').innerHTML = tabs.map((t) => `
     <button class="tab" role="tab" type="button" id="tab-${esc(t.id)}" data-tab="${esc(t.id)}" aria-selected="${t.id === state.tab}">
-      ${esc(t.label)}<span class="count ${t.cls}" title="${t.id === ORDER_TAB ? 'Items to order' : 'Low items'}">${t.count}</span>
+      ${esc(t.label)}<span class="count ${t.cls}" title="${t.id === ORDER_TAB ? 'Items to order' : t.id === USERS_TAB ? '' : 'Low items'}">${t.count}</span>
     </button>`).join('');
 }
 
@@ -465,6 +573,8 @@ function renderChips() {
 }
 
 function renderView() {
+  $('filters').hidden = state.tab === USERS_TAB;
+  if (state.tab === USERS_TAB) return renderUsers();
   if (state.tab === ORDER_TAB) return renderOrder();
   const rows = rowsFor(state.tab)
     .filter((r) => state.category === 'All' || state.items.get(r.sku).category === state.category)
@@ -720,7 +830,7 @@ $('tabs').addEventListener('click', (e) => {
 
 window.addEventListener('hashchange', () => {
   const id = location.hash.slice(1);
-  if (id === state.tab || !(id === ORDER_TAB || state.outlets.some((o) => o.outlet_id === id))) return;
+  if (id === state.tab || !validTab(id)) return;
   state.tab = id;
   renderTabs();
   renderView();
@@ -780,7 +890,222 @@ window.addEventListener('beforeunload', (e) => {
   if ([...state.drafts.keys()].some(isDirty)) { e.preventDefault(); e.returnValue = ''; }
 });
 
-load();
+/* ---------- Users (admins only) ---------- */
+
+async function loadMembers() {
+  state.members = await api('stock_tracker_members?select=user_id,is_admin,created_at,profile:profiles!stock_tracker_members_user_id_fkey(username,display_name)&order=created_at');
+}
+
+function renderUsers() {
+  const rows = state.members.map((m) => {
+    const isMe = m.user_id === state.me.id;
+    const confirming = state.confirmRemove === m.user_id;
+    const action = isMe ? '<span class="hint">You</span>'
+      : confirming
+        ? `<button class="link-btn" type="button" data-cancel-remove>Cancel</button><button class="btn danger" type="button" data-remove="${esc(m.user_id)}" data-confirmed="1">Confirm remove</button>`
+        : `<button class="link-btn danger" type="button" data-remove="${esc(m.user_id)}">Remove access</button>`;
+    return `<tr>
+      <td class="item-cell"><strong>${esc(m.profile?.display_name ?? '—')}</strong><span class="mono">${esc(m.profile?.username ?? '')}</span></td>
+      <td>${m.is_admin ? 'Admin' : 'Staff'}</td>
+      <td>${fmtDate(m.created_at.slice(0, 10))}</td>
+      <td class="n" style="white-space:nowrap">${action}</td>
+    </tr>`;
+  }).join('');
+  $('view').innerHTML = `
+    <div style="display:grid;gap:12px">
+    <section class="panel">
+      <div class="panel-head"><div><h2>Users</h2><p>${state.members.length} people can sign in to the stock tracker</p></div></div>
+      <form class="add-user" id="add-user-form" novalidate>
+        <div class="field"><label for="nu-username">Username</label>
+          <input class="text-input" id="nu-username" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. kiwi" required>
+          <span class="hint">Lowercase letters, numbers, . - _</span></div>
+        <div class="field"><label for="nu-name">Display name</label>
+          <input class="text-input" id="nu-name" autocomplete="off" placeholder="e.g. Kiwi">
+          <span class="hint">Optional</span></div>
+        <div class="field"><label for="nu-password">Starting password</label>
+          <input class="text-input" id="nu-password" type="text" autocomplete="off" placeholder="At least 8 characters" required>
+          <span class="hint">They’ll be asked to change it</span></div>
+        <div class="full">
+          <label class="toggle"><input type="checkbox" id="nu-admin"> Admin (can add and remove users)</label>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span class="form-error" id="nu-error" role="alert" hidden></span>
+            <button class="btn btn-primary" type="submit" id="nu-submit">Add user</button>
+          </div>
+        </div>
+      </form>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Role</th><th>Added</th><th class="n"></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </section>
+    <p class="footnote">Removing access stops someone using the stock tracker. Their account stays in Supabase, along with any other apps it’s used for.</p>
+    </div>`;
+  $('add-user-form').addEventListener('submit', addUser);
+}
+
+async function addUser(e) {
+  e.preventDefault();
+  const username = $('nu-username').value.trim().toLowerCase();
+  const displayName = $('nu-name').value.trim();
+  const password = $('nu-password').value;
+  const err = $('nu-error');
+  const fail = (msg) => { err.textContent = msg; err.hidden = false; };
+  err.hidden = true;
+  if (!/^[a-z0-9._-]{2,32}$/.test(username)) return fail('Use 2–32 lowercase letters, numbers, dots, dashes or underscores for the username.');
+  if (password.length < 8) return fail('The starting password needs at least 8 characters.');
+  $('nu-submit').disabled = true;
+  $('nu-submit').textContent = 'Adding…';
+  try {
+    await api('rpc/add_stock_tracker_user', {
+      method: 'POST',
+      body: { p_username: username, p_password: password, p_display_name: displayName || null, p_is_admin: $('nu-admin').checked },
+    });
+    await loadMembers();
+    renderUsers();
+    toast(`Added ${username}. They can sign in with the starting password you set.`);
+  } catch (ex) {
+    $('nu-submit').disabled = false;
+    $('nu-submit').textContent = 'Add user';
+    fail(ex.message);
+  }
+}
+
+async function removeMember(userId) {
+  const m = state.members.find((x) => x.user_id === userId);
+  try {
+    const removed = await api(`stock_tracker_members?user_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE', prefer: 'return=representation' });
+    if (!removed?.length) throw new Error('Supabase didn’t allow removing this user');
+    state.confirmRemove = null;
+    await loadMembers();
+    renderUsers();
+    toast(`${m?.profile?.display_name ?? 'User'} can no longer use the stock tracker`);
+  } catch (ex) {
+    toast(`Couldn’t remove access. ${ex.message}`, true);
+  }
+}
+
+$('view').addEventListener('click', (e) => {
+  if (state.tab !== USERS_TAB) return;
+  if (e.target.closest('[data-cancel-remove]')) { state.confirmRemove = null; renderUsers(); return; }
+  const btn = e.target.closest('[data-remove]');
+  if (!btn) return;
+  if (btn.dataset.confirmed) removeMember(btn.dataset.remove);
+  else { state.confirmRemove = btn.dataset.remove; renderUsers(); }
+});
+
+/* ---------- Sign-in, sign-out and password ---------- */
+
+function showSignIn() {
+  state.me = null;
+  $('app').hidden = true;
+  $('auth').hidden = false;
+  $('si-submit').disabled = false;
+  $('si-submit').textContent = 'Sign in';
+  $('si-username').focus();
+}
+
+async function enterApp(session) {
+  const user = session.user;
+  $('auth').hidden = true;
+  $('app').hidden = false;
+  setStatus('loading', 'Loading from Supabase…');
+  try {
+    const [membership, profile] = await Promise.all([
+      api(`stock_tracker_members?select=is_admin&user_id=eq.${user.id}`),
+      api(`profiles?select=username,display_name&id=eq.${user.id}`),
+    ]);
+    const username = profile[0]?.username ?? user.email.split('@')[0];
+    state.me = { id: user.id, username, display_name: profile[0]?.display_name ?? username, is_admin: !!membership[0]?.is_admin };
+    renderUser(user);
+    if (!membership.length) {
+      setStatus('error', 'No access');
+      renderMessage('Your account doesn’t have access to the stock tracker',
+        `You’re signed in as ${username}, but you haven’t been added as a stock tracker user. Ask an admin to add you, or sign out and use a different account.`);
+      return;
+    }
+    await load();
+  } catch (err) {
+    setStatus('error', 'Couldn’t reach Supabase');
+    renderMessage('Couldn’t load your account', `${err.message}. Check your internet connection, then press Refresh.`);
+  }
+}
+
+function renderUser(user) {
+  $('user-name').textContent = state.me.display_name;
+  $('user-avatar').textContent = state.me.display_name.slice(0, 1);
+  $('user-role').hidden = !state.me.is_admin;
+  $('pw-banner').hidden = !user.user_metadata?.must_change_password;
+}
+
+$('sign-in-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = $('si-username').value.trim().toLowerCase();
+  const password = $('si-password').value;
+  const err = $('si-error');
+  err.hidden = true;
+  if (!username || !password) { err.textContent = 'Enter your username and password.'; err.hidden = false; return; }
+  $('si-submit').disabled = true;
+  $('si-submit').textContent = 'Signing in…';
+  const { error } = await sb.auth.signInWithPassword({ email: `${username}@${EMAIL_DOMAIN}`, password });
+  if (error) {
+    err.textContent = /invalid login/i.test(error.message) ? 'That username and password don’t match. Check them and try again.' : error.message;
+    err.hidden = false;
+    $('si-submit').disabled = false;
+    $('si-submit').textContent = 'Sign in';
+    $('si-password').select();
+  }
+  // On success, onAuthStateChange opens the app.
+});
+
+$('sign-out').addEventListener('click', async () => {
+  if ([...state.drafts.keys()].some(isDirty)) {
+    toast('You have unsaved changes. Save or discard them before signing out.', true);
+    return;
+  }
+  await sb.auth.signOut();
+});
+
+function openPasswordDialog() {
+  $('pw-form').reset();
+  $('pw-error').hidden = true;
+  $('pw-dialog').showModal();
+  $('pw-new').focus();
+}
+$('change-pw').addEventListener('click', openPasswordDialog);
+$('pw-banner-btn').addEventListener('click', openPasswordDialog);
+$('pw-cancel').addEventListener('click', () => $('pw-dialog').close());
+
+$('pw-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pw = $('pw-new').value;
+  const err = $('pw-error');
+  const fail = (msg) => { err.textContent = msg; err.hidden = false; };
+  err.hidden = true;
+  if (pw.length < 8) return fail('Use at least 8 characters.');
+  if (pw === 'password') return fail('Choose something other than the starting password.');
+  if (pw !== $('pw-confirm').value) return fail('The two passwords don’t match.');
+  $('pw-submit').disabled = true;
+  const { data, error } = await sb.auth.updateUser({ password: pw, data: { must_change_password: false } });
+  $('pw-submit').disabled = false;
+  if (error) return fail(error.message);
+  $('pw-dialog').close();
+  $('pw-banner').hidden = !data.user?.user_metadata?.must_change_password;
+  toast('Password changed');
+});
+
+let currentUserId; // undefined until the first auth event, so a signed-out start still shows the sign-in screen
+sb.auth.onAuthStateChange((event, session) => {
+  const uid = session?.user?.id ?? null;
+  if (uid === currentUserId) return; // token refreshes and user updates keep the current view
+  currentUserId = uid;
+  // Run outside the auth callback so Supabase calls inside don't wait on it.
+  setTimeout(() => {
+    state.drafts.clear();
+    state.tab = null;
+    if (session) enterApp(session);
+    else showSignIn();
+  }, 0);
+});
 </script>
 </body>
 </html>
